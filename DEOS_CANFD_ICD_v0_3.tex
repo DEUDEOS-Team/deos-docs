@@ -1005,7 +1005,24 @@ RESPONSE Message Class protokolde ayrılmıştır; ancak hangi komutların zorun
     \item servis tipi tek-seferlik yönetim komutları.
 \end{itemize}
 
-Başlangıç response result code registry önerisi:
+\subsection{Generic Response Payload}
+
+\code{DEOS\_CLASS\_RESPONSE} mesajları varsayılan olarak standart bir veri yerleşimi kullanır. Eğer ilgili komut özel bir ek veri döndürmüyorsa, yanıt mesajının içeriği her zaman şu formatta olur:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{c l c X}
+\toprule
+Byte & Alan & Tip & Açıklama \\
+\midrule
+0 & Result Code & \code{uint8\_t} & İşlem sonucu (\code{deos\_result\_t}) \\
+1..N & Ek Veri (Opsiyonel) & Değişken & Komuta özgü veri \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Result code \hex{00} (SUCCESS) olduğunda işlem başarılı sayılır. Bu genel yapı sayesinde, her komut için özel bir response formatı tasarlamaya gerek kalmadan hata yönetimi standartlaştırılmıştır.
+
+Aşağıda standart response result kodları listelenmiştir:
 
 \begin{center}
 \begin{tabular}{c l}
@@ -1313,8 +1330,6 @@ Mesaj bazında henüz dondurulmamış başlıca CAN-FD protokol alanları şunla
     \item Her mesajın tam command payload byte haritası,
     \item Her komutun minimum ve maksimum fiziksel sınırları,
     \item Her komutun periyodu ve timeout değeri,
-    \item Hangi komutların RESPONSE gerektirdiği,
-    \item RESPONSE payload yerleşimi,
     \item Safety mesajlarının nihai priority seviyeleri,
     \item Kalibrasyon payload ayrıntıları,
     \item BMS status mesajının nihai sinyal listesi,
