@@ -1,0 +1,147 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{cmap}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\setlength{\emergencystretch}{1em}
+\renewcommand{\arraystretch}{1.2}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\title{\textbf{DEOS Core İnceleme ve Düzeltme Raporu}\\
+\large Yönlendirme, heartbeat, frame sınırları ve handler kapasitesi}
+\author{DEOS Firmware}
+\date{19 Ekim 2026}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{p{3.4cm}Y p{3.1cm}Y}
+\toprule
+\textbf{Rapor türü} & Kod incelemesi ve düzeltme özeti &
+\textbf{Dal} & \path{fix/core-review-findings} \\
+\textbf{Kapsam} & \texttt{deos\_core}, \texttt{deos\_protocol} ve testler &
+\textbf{Sonuç} & Derleme ve regresyon kontrolleri başarılı \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Özet}
+
+DEOS kütüphanelerinin incelenmesinde dört davranış/konfigürasyon sorunu
+belirlendi. CAN broadcast paketleri için yerel teslim koşulu ulaşılamaz
+durumdaydı; heartbeat aboneliği düğümün gerçek durumu yerine sabit
+\texttt{READY} üretiyordu; frame encoder 60 bayttan büyük payload uzunluğunu
+reddetmiyordu; handler kapasitesi için sunulan Kconfig ayarı registry
+kapasitesini değiştirmiyordu.
+
+Düzeltmeler feature branch’lerinde uygulandı ve commit edildi. Core değişiklikleri
+için maintainer incelemesi talep eden
+\href{https://github.com/DEUDEOS-Team/deos-core/issues/2}{deos-core Issue \#2}
+açıldı. Bu rapor yapılan kod değişikliklerini ve doğrulama sonuçlarını kaydeder;
+Issue açılması veya branch push edilmesi, değişikliklerin ana dala birleştirildiği
+anlamına gelmez.
+
+\section{Bulgular ve yapılan düzeltmeler}
+
+\subsection{CAN broadcast yerel düğümlere ulaşmıyordu}
+
+\textbf{Sorun.} Router, \texttt{0xFE} hedefini yerel teslim için
+\path{deos_is_local_node()} ile kontrol ediyordu. Bu fonksiyon broadcast
+ID’lerini yerel düğüm olarak kabul etmediğinden CAN broadcast mesajları normal
+rota yolunda yerel handler’lara teslim edilemiyordu.
+
+\textbf{Düzeltme.} \path{deos_route_message()} içine \path{0xFE} için
+özel bir akış eklendi: mesaj önce yerel dispatch’e veriliyor, ardından yalnızca
+CAN-FD TX callback’i varsa ve paket CAN-FD’den gelmediyse CAN’a aktarılıyor.
+Böylece CAN-only davranışı korunurken split-horizon/loopback kuralı da
+korunuyor. Değişiklik \path{lib/deos_core/src/deos_router.c} içindedir.
+
+\enlargethispage{2\baselineskip}
+\subsection{Heartbeat durumu sabit ve yayın hedefi fazla genişti}
+
+\textbf{Sorun.} Abonelik motorunun periyodik ve on-change heartbeat yolları
+durumu daima \path{DEOS_STATE_READY} olarak üretiyordu. Ayrıca normal
+heartbeat göndericisi global broadcast \path{0xFF} kullanıyordu. Mimari
+kurala göre yüksek frekanslı heartbeat yalnızca CAN-FD üzerinde yayınlanmalıdır.
+
+\textbf{Düzeltme.} Her yerel düğüm için son gönderilen durum atomik tabloda
+tutuluyor. \path{deos_send_heartbeat_from_node()} bu değeri güncelliyor;
+abonelik yolları da aynı düğümün son değerini kullanıyor. Normal heartbeat
+hedefi \path{DEOS_NODE_CAN_BROADCAST} olarak değiştirildi. Henüz heartbeat
+göndermemiş düğümün başlangıç durumu enum değeri olan \path{INIT}’tir.
+Değişiklikler \path{deos_network.c} ve \path{deos_subscription.c}
+içindedir.
+
+\subsection{Frame encoder fazla uzun payload’ı reddetmiyordu}
+
+\textbf{Sorun.} Decoder 60 baytlık payload üst sınırını uygularken encoder bu
+sınırı kontrol etmiyordu. Geçersiz bir \path{payload_len}, fonksiyonun buffer
+kapasitesi uygun görünüyorsa hatalı uzunluk döndürmesine yol açabiliyordu.
+
+\textbf{Düzeltme.} Encoder, \texttt{deos\_frame\_encode()} içinde 60 bayt
+sınırını kontrol ediyor ve aşımda \texttt{-EMSGSIZE} döndürüyor.
+Masaüstü testine 61 bayt için regresyon kontrolü eklendi.
+Kaynak: \path{lib/deos_protocol/src/deos_frame.c}.
+Regresyon testi: \path{tests/desktop/test_deos_protocol_desktop.cpp}.
+
+\subsection{Handler kapasitesi Kconfig’e bağlı değildi}
+
+\textbf{Sorun.} \path{CONFIG_DEOS_MAX_HANDLERS} Kconfig seçeneği
+tanımlanmıştı ancak registry dizisinin boyutu bağımsız olarak sabit 32 ile
+belirleniyordu. Bu nedenle kullanıcının kapasite ayarı etkisizdi.
+
+\textbf{Düzeltme.} Registry, \texttt{CONFIG\_DEOS\_MAX\_HANDLERS}
+tanımlıysa bu değeri kapasite olarak kullanıyor. Bağımsız masaüstü
+derlemelerinde varsayılan 32 korunuyor. Bu ayar \texttt{deos\_registry.h}
+içine bağlandı.
+Çekirdekte kullanılmayan ikinci kapasite makrosu kaldırıldı.
+
+\section{Doğrulama}
+
+\begin{itemize}
+    \item Masaüstü protokol hedefi derlendi ve \path{desktop_protocol_test}
+    çalıştırıldı. Codec, frame encode/decode ve registry testlerinin tamamı geçti;
+    oversized payload regresyon kontrolü de başarılı oldu.
+    \item \path{CONFIG_DEOS_MAX_HANDLERS=7} tanımlanarak registry
+    kapasitesinin 7 olduğunu doğrulayan derleme zamanı assertion’ı çalıştırıldı.
+    \item \path{west build -b nucleo_h563zi apps/main_node} başarılı
+    tamamlandı.
+\end{itemize}
+
+Donanımsal CAN davranışı için bench veya araç üstü test bu çalıştırmada
+yapılmadı. Build sırasında görülen devicetree deprecated-property uyarıları
+derlemeyi engellemedi ve bu değişikliklerin kapsamı dışındadır.
+
+\section{Dal ve commit izi}
+
+Tüm depolarda \path{fix/core-review-findings} dalı oluşturuldu ve origin’e
+push edildi.
+
+\begin{tabularx}{\textwidth}{p{3.2cm}p{2.1cm}Y}
+\toprule
+\textbf{Depo} & \textbf{Commit} & \textbf{Değişiklik} \\
+\midrule
+\texttt{deos-core} & \texttt{495577b} & CAN broadcast’ı yerel dispatch’e teslim et \\
+\texttt{deos-core} & \texttt{0d61787} & Güncel heartbeat durumunu bildir \\
+\texttt{deos-core} & \texttt{21e7935} & Kullanılmayan kapasite makrosunu kaldır \\
+\texttt{deos-protocol} & \texttt{502f99b} & Oversized frame payload’ı reddet \\
+\texttt{deos-protocol} & \texttt{70d846f} & Kconfig handler kapasitesini kullan \\
+\texttt{deos-firmware} & \texttt{e65a91b} & Encoder regresyon testi ve alt modül pointer’ı \\
+\texttt{deos-firmware} & \texttt{ae67d50} & Core alt modül pointer’ı \\
+\bottomrule
+\end{tabularx}
+
+\end{document}

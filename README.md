@@ -14,6 +14,8 @@ Bu depo, **DEUDEOS Otonom Araç Ekibi** bünyesindeki tüm alt sistemlerin (Firm
 - **[`FUNCTIONAL_SPLIT.md`](FUNCTIONAL_SPLIT.md)**: Alt sistemlerin sorumluluk sınırları ve mantıksal iş bölümü.
 - **[`ros2/`](ros2/)**: ROS 2 köprüsü ve telemetri entegrasyonu rehberleri.
 - **[`reports/`](reports/)**: Test, analiz ve doğrulama raporları.
+	- [DEOS Core İnceleme ve Düzeltme Raporu (PDF)](reports/DEOS_Core_Review_Fix_Report.pdf)
+	- [LaTeX kaynağı](reports/DEOS_Core_Review_Fix_Report.tex)
 - **[`archive/`](archive/)**: Protokolün eski sürümleri ve arşiv dokümanları.
 
 ---
