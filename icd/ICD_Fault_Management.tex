@@ -32,9 +32,9 @@
 }
 
 \title{\textbf{DEOS Fault Management \& Diagnostics ICD}\\
-\large Sürüm 1.2 -- DIAGNOSTIC Servisi ve Hata Yönetimi}
+\large Sürüm 1.3 -- DIAGNOSTIC Servisi ve Hata Yönetimi}
 \author{\textbf{Emir Arkalı} (\href{mailto:emirarkali07@gmail.com}{emirarkali07@gmail.com})\\DEOS -- Dokuz Eylül Otonom Sistemler}
-\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 15 Ekim 2026}
+\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 22 Ekim 2026}
 
 \begin{document}
 
@@ -45,9 +45,9 @@
 \begin{tabularx}{\textwidth}{ll lX}
 \toprule
 \textbf{Doküman Tipi:} & Interface Control Document (ICD) & \textbf{Doküman Kodu:} & \code{DOC-ICD-DIAG-004} \\
-\textbf{Doküman Sürümü:} & Sürüm 1.2 & \textbf{Protokol Sürümü:} & v1.1 (\hex{11}) -- Medya Bağımsız \\
+\textbf{Doküman Sürümü:} & Sürüm 1.3 & \textbf{Protokol Sürümü:} & v1.1 (\hex{11}) -- Medya Bağımsız \\
 \textbf{Yazar:} & Emir Arkalı (\texttt{emirarkali07@gmail.com}) & \textbf{Son Değiştiren:} & Emir Arkalı \\
-\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 15 Ekim 2026 \\
+\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 22 Ekim 2026 \\
 \textbf{Durum:} & Yürürlükte / Onaylandı & \textbf{Taşıma / Kapsam:} & DIAGNOSTIC Servisi (\hex{02}) \& Hata Kodları Registry \\
 \bottomrule
 \end{tabularx}
@@ -64,6 +64,7 @@ v0.3 & 28 Eylül 2026 & Emir Arkalı & İlk taslak ve monolitik ICD v0.3 tanım�
 v1.0 & 04 Ekim 2026 & Emir Arkalı & Hata yönetimi bağımsız doküman oluşturuldu. \\
 v1.1 & 13 Ekim 2026 & Emir Arkalı & Sürüm 1.1 standardizasyonu, kurumsal üstveri ve revizyon geçmişi eklendi. \\
 v1.2 & 15 Ekim 2026 & Emir Arkalı & Abonelik ve Ağ Yönetimi (Subscription Engine) spesifik hata kodları (\hex{0010}--\hex{0014}) eklendi. \\
+v1.3 & 22 Ekim 2026 & Emir Arkalı & Çekirdek ve taşıyıcı katmanları (Router, Protokol, CAN-FD, LoRa, Ethernet, Dispatcher) hata kodları (\hex{0020}--\hex{00A2}) eklendi. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -207,36 +208,99 @@ kullanılması önerilir.
 
 \subsection{Ortak Yerel Fault ID'leri}
 
-Aşağıdaki fault ID'leri node içerisinde ihtiyaç duyulması halinde
-aynı anlamla kullanılmalıdır.
+Aşağıdaki fault ID'leri DEOS çekirdek kütüphanesi (\code{lib/deos\_core}) ve node uygulamaları içerisinde ortak standart hata tanımları olarak kullanılmaktadır. Düğümler arası teşhis tutarlılığı için bu kodlar aynı anlamda ele alınmalıdır.
 
 \begin{center}
-\begin{tabular}{c l}
+\small
+\begin{longtable}{c >{\ttfamily\footnotesize}p{7.6cm} p{6.6cm}}
 \toprule
-\textbf{Fault ID} & \textbf{Önerilen Anlam} \\
+\textbf{Fault ID} & \rmfamily\textbf{Sembolik İsim} & \textbf{Önerilen Anlam / Açıklama} \\
 \midrule
-0x0000 & Reserved -- End of Fault List \\
-0x0001 & Internal Software Error \\
-0x0002 & Watchdog Reset Detected \\
-0x0003 & Invalid Configuration \\
-0x0004 & Communication Timeout \\
-0x0005 & RX Buffer / Queue Overflow \\
-0x0006 & TX Failure \\
-0x0007 & Protocol / Invalid Message Error \\
-0x0008 & Local Storage Error \\
+\endfirsthead
+\toprule
+\textbf{Fault ID} & \rmfamily\textbf{Sembolik İsim} & \textbf{Önerilen Anlam / Açıklama} \\
 \midrule
-\multicolumn{2}{c}{\textbf{Abonelik ve Ağ Yönetimi (Subscription Engine)}} \\
-\midrule
-0x0010 & Subscription Table Full (Kapasite Aşımı) \\
-0x0011 & Subscription Broadcast Rejected (Geçersiz Hedef) \\
-0x0012 & Subscription Malformed Payload (Bozuk Paket) \\
-0x0013 & Subscription Handler Not Found (Kayıtsız Servis/Komut) \\
-0x0014 & Subscription Dispatch Failed (Sentetik İstek Hatası) \\
+\endhead
 \bottomrule
-\end{tabular}
+\endfoot
+\bottomrule
+\endlastfoot
+
+\multicolumn{3}{c}{\textbf{Sistem \& Donanım Hataları (0x0001 -- 0x000F)}} \\
+\midrule
+\hex{0000} & DEOS\_FAULT\_ID\_END\_OF\_LIST & Reserved -- Fault listesi sonu (EOF) \\
+\hex{0001} & DEOS\_FAULT\_INTERNAL\_SOFTWARE\_ERROR & Dahili yazılım / assertion hatası \\
+\hex{0002} & DEOS\_FAULT\_WATCHDOG\_RESET & Watchdog reset algılandı \\
+\hex{0003} & DEOS\_FAULT\_INVALID\_CONFIGURATION & Geçersiz başlangıç konfigürasyonu \\
+\hex{0004} & DEOS\_FAULT\_COMMUNICATION\_TIMEOUT & Genel iletişim zaman aşımı \\
+\hex{0005} & DEOS\_FAULT\_LOCAL\_STORAGE\_ERROR & Dahili hafıza / NVM erişim hatası \\
+\hex{0006} & DEOS\_FAULT\_ESTOP\_TRIGGERED & Acil durdurma (E-STOP) tetiklendi \\
+\hex{0007} & DEOS\_FAULT\_MEMORY\_ALLOCATION\_FAILED & Dinamik/statik bellek tahsis hatası \\
+\midrule
+\multicolumn{3}{c}{\textbf{Telemetri \& Abonelik Hataları (0x0010 -- 0x001F)}} \\
+\midrule
+\hex{0010} & DEOS\_FAULT\_SUB\_TABLE\_FULL & Abonelik tablosu kapasite aşımı \\
+\hex{0011} & DEOS\_FAULT\_SUB\_BROADCAST\_REJECTED & Broadcast hedefine abonelik reddedildi \\
+\hex{0012} & DEOS\_FAULT\_SUB\_MALFORMED\_PAYLOAD & Abonelik paket boyutu/alanı geçersiz \\
+\hex{0013} & DEOS\_FAULT\_SUB\_HANDLER\_NOT\_FOUND & Abone olunmak istenen handler tanımsız \\
+\hex{0014} & DEOS\_FAULT\_SUB\_DISPATCH\_FAILED & Sentetik abonelik periyot tetiklemesi başarısız \\
+\midrule
+\multicolumn{3}{c}{\textbf{Yönlendirici (Router) Hataları (0x0020 -- 0x002F)}} \\
+\midrule
+\hex{0020} & DEOS\_FAULT\_ROUTER\_NO\_POLICY & Rota politikası fonksiyonu atanmamış \\
+\hex{0021} & DEOS\_FAULT\_ROUTER\_UNMAPPED\_ROUTE & Hedef düğüm rota tablosunda yok (DROP) \\
+\hex{0022} & DEOS\_FAULT\_ROUTER\_TRP\_UNAVAILABLE & Hedef hat bağlı değil veya TX kaydı yok \\
+\hex{0023} & DEOS\_FAULT\_ROUTER\_LOOPBACK\_DETECTED & Split Horizon: Paket geldiği hatta geri gönderilmek istendi \\
+\hex{0024} & DEOS\_FAULT\_ROUTER\_QUEUE\_FULL & Router kuyruğu taştı \\
+\midrule
+\multicolumn{3}{c}{\textbf{Protokol \& Çerçeve Hataları (0x0030 -- 0x003F)}} \\
+\midrule
+\hex{0030} & DEOS\_FAULT\_PROTOCOL\_VERSION\_MISMATCH & Protokol versiyonu uyumsuz \\
+\hex{0031} & DEOS\_FAULT\_FRAME\_HEADER\_TOO\_SHORT & Evrensel başlık boyutu yetersiz \\
+\hex{0032} & DEOS\_FAULT\_PAYLOAD\_TOO\_LARGE & Payload \code{DEOS\_MAX\_PAYLOAD\_LEN} sınırını aşıyor \\
+\hex{0033} & DEOS\_FAULT\_FRAME\_CRC\_MISMATCH & Çerçeve CRC doğrulama hatası \\
+\hex{0034} & DEOS\_FAULT\_FRAME\_DECODE\_FAILED & Çerçeve decode edilemedi / bozuk paket \\
+\midrule
+\multicolumn{3}{c}{\textbf{CAN / CAN-FD Taşıyıcı Hataları (0x0040 -- 0x005F)}} \\
+\midrule
+\hex{0040} & DEOS\_FAULT\_CAN\_DEV\_NOT\_READY & CAN donanım aygıtı hazır değil \\
+\hex{0041} & DEOS\_FAULT\_CAN\_MODE\_NOT\_SUPPORTED & CAN-FD modu donanımca desteklenmiyor \\
+\hex{0042} & DEOS\_FAULT\_CAN\_FILTER\_INSTALL\_FAILED & Donanımsal RX filtre kurulamadı \\
+\hex{0043} & DEOS\_FAULT\_CAN\_RX\_QUEUE\_FULL & CAN RX kuyruğu taştı \\
+\hex{0044} & DEOS\_FAULT\_CAN\_TX\_QUEUE\_FULL & CAN TX kuyruğu taştı \\
+\hex{0045} & DEOS\_FAULT\_CAN\_TX\_SEND\_FAILED & Zephyr \code{can\_send} başarısız oldu / timeout \\
+\hex{0046} & DEOS\_FAULT\_CAN\_FRAME\_DECODE\_ERR & Gelen CAN frame parse edilemedi \\
+\hex{0047} & DEOS\_FAULT\_CAN\_BUS\_OFF & CAN denetleyici Bus-Off durumunda \\
+\midrule
+\multicolumn{3}{c}{\textbf{UART / LoRa Taşıyıcı Hataları (0x0060 -- 0x007F)}} \\
+\midrule
+\hex{0060} & DEOS\_FAULT\_LORA\_DEV\_NOT\_READY & LoRa UART donanımı hazır değil \\
+\hex{0061} & DEOS\_FAULT\_LORA\_TX\_QUEUE\_FULL & LoRa TX kuyruğu taştı \\
+\hex{0062} & DEOS\_FAULT\_LORA\_RX\_BUFFER\_OVERFLOW & LoRa ring buffer taştı \\
+\hex{0063} & DEOS\_FAULT\_LORA\_CRC\_MISMATCH & Havadan gelen paketin CRC'si hatalı \\
+\hex{0064} & DEOS\_FAULT\_LORA\_FRAME\_MALFORMED & Havadan gelen paket başlığı bozuk \\
+\hex{0065} & DEOS\_FAULT\_LORA\_ACK\_TIMEOUT & ACK beklenen pakete yanıt gelmedi \\
+\midrule
+\multicolumn{3}{c}{\textbf{Ethernet / Network Taşıyıcı Hataları (0x0080 -- 0x009F)}} \\
+\midrule
+\hex{0080} & DEOS\_FAULT\_ETH\_LINK\_DOWN & Ethernet kablosu takılı değil / Link yok \\
+\hex{0081} & DEOS\_FAULT\_ETH\_SOCKET\_CREATE\_FAILED & TCP/UDP socket oluşturulamadı \\
+\hex{0082} & DEOS\_FAULT\_ETH\_SOCKET\_BIND\_FAILED & Socket porta bind edilemedi \\
+\hex{0083} & DEOS\_FAULT\_ETH\_TX\_QUEUE\_FULL & Ethernet TX kuyruğu taştı \\
+\hex{0084} & DEOS\_FAULT\_ETH\_TX\_SEND\_FAILED & Socket send/sendto hatası \\
+\hex{0085} & DEOS\_FAULT\_ETH\_CLIENT\_DISCONNECTED & Bağlı UI / ROS Bridge istemcisi koptu \\
+\hex{0086} & DEOS\_FAULT\_ETH\_FRAME\_DECODE\_ERR & Gelen Ethernet çerçevesi bozuk \\
+\midrule
+\multicolumn{3}{c}{\textbf{Dağıtıcı (Dispatcher) Hataları (0x00A0 -- 0x00AF)}} \\
+\midrule
+\hex{00A0} & DEOS\_FAULT\_DISPATCH\_TABLE\_FULL & Handler tablosunda yer kalmadı \\
+\hex{00A1} & DEOS\_FAULT\_DISPATCH\_DUPLICATE\_HANDLER & Aynı komut için mükerrer handler kaydı \\
+\hex{00A2} & DEOS\_FAULT\_DISPATCH\_HANDLER\_NOT\_FOUND & Gelen komut için handler tanımlı değil \\
+\bottomrule
+\end{longtable}
 \end{center}
 
-\subsubsection{Abonelik Hata Kodları Ayrıntıları}
+\subsubsection{Abonelik ve Ağ Yönetimi Hata Kodları Ayrıntıları}
 
 Abonelik motoru (\texttt{DEOS\_CMD\_SYSTEM\_SUBSCRIBE} ve \texttt{DEOS\_CMD\_SYSTEM\_UNSUBSCRIBE})
 çalışırken meydana gelebilecek protokol ve kapasite istisnaları aşağıdaki gibi sınıflandırılır:
@@ -247,6 +311,40 @@ Abonelik motoru (\texttt{DEOS\_CMD\_SYSTEM\_SUBSCRIBE} ve \texttt{DEOS\_CMD\_SYS
     \item \textbf{0x0012 -- Subscription Malformed Payload}: Gelen subscribe veya unsubscribe mesajının data uzunluğu ICD standardında tanımlanan struct boyutundan küçük veya alanları geçersiz olduğunda üretilir.
     \item \textbf{0x0013 -- Subscription Handler Not Found}: Abone olunmak istenen servis veya komut hedef node'un dispatcher tablosunda kayıtlı olmadığında veya periyodik tetiklenme anında handler kaybolduğunda üretilir.
     \item \textbf{0x0014 -- Subscription Dispatch Failed}: Periyot zamanlayıcısı tetiklendiğinde uygulama katmanının kayıtlı callback'i negatif hata kodu döndürdüğünde veya yanıt iletimi başarısız olduğunda üretilir.
+\end{itemize}
+
+\subsubsection{Yönlendirici (Router) Hata Kodları Ayrıntıları}
+
+Router altyapısı paketlerin çoklu taşıyıcı hatlar (CAN-FD, UART/LoRa, Ethernet) arasında güvenle aktarılmasını sağlar. Karşılaşılan istisnalar:
+
+\begin{itemize}
+    \item \textbf{0x0020 -- Router No Policy}: Düğüm yönlendirme mekanizmasına bir route policy fonksiyonu atanmadığında üretilir.
+    \item \textbf{0x0021 -- Router Unmapped Route}: Hedef düğüm adresi rota tablosunda veya yönlendirme politikasında tanımlı değilse paket düşürülür (DROP) ve bu hata tetiklenir.
+    \item \textbf{0x0022 -- Router TRP Unavailable}: Yönlendirilmek istenen taşıyıcı hat (transport) başlatılmamış, kopmuş veya iletim callback'i bulunmuyorsa üretilir.
+    \item \textbf{0x0023 -- Router Loopback Detected (Split Horizon)}: Bir paket geldiği fiziksel hatta geri yönlendirilmeye çalışıldığında döngü oluşmasını engellemek amacıyla paket düşürülür ve Split Horizon ihlali olarak kaydedilir.
+    \item \textbf{0x0024 -- Router Queue Full}: Taşıyıcı katmanlara iletilmek üzere kuyruğa alınan paket sayısı kuyruk derinliğini aştığında üretilir.
+\end{itemize}
+
+\subsubsection{Taşıyıcı Katmanları (CAN-FD, LoRa, Ethernet) Hata Kodları Ayrıntıları}
+
+Fiziksel hat sürücüleri ve haberleşme çevre birimlerinde meydana gelen donanımsal ve mantıksal hatalar:
+
+\begin{itemize}
+    \item \textbf{0x0040 -- CAN Dev Not Ready}: Device tree üzerinde tanımlı CAN controller aygıtı Zephyr tarafından başlatılamadığında üretilir.
+    \item \textbf{0x0045 -- CAN TX Send Failed}: \code{can\_send()} çağrısı donanımsal meşguliyet (örn. \code{-EBUSY}), zaman aşımı veya hattaki ACK eksikliği nedeniyle başarısız olduğunda üretilir.
+    \item \textbf{0x0047 -- CAN Bus Off}: CAN denetleyicisi aşırı hata sayacı (TEC > 255) nedeniyle donanımsal Bus-Off durumuna geçtiğinde üretilir.
+    \item \textbf{0x0062 / 0x0065 -- LoRa RX Overflow \& ACK Timeout}: LoRa UART ring buffer taştığında veya teyitli (ACK istenen) RF paketlerine belirlenen timeout süresi içinde cevap alınamadığında üretilir.
+    \item \textbf{0x0080 / 0x0085 -- Ethernet Link Down \& Client Disconnected}: Fiziksel kablo bağlantısı koptuğunda veya TCP tabanlı Textual UI / ROS Bridge istemcisi soket bağlantısını sonlandırdığında üretilir.
+\end{itemize}
+
+\subsubsection{Dağıtıcı (Dispatcher) Hata Kodları Ayrıntıları}
+
+Mesajların servis ve komut ID'sine göre yerel işleyici fonksiyonlara ulaştırılması esnasındaki hatalar:
+
+\begin{itemize}
+    \item \textbf{0x00A0 -- Dispatch Table Full}: Node üzerinde kayıt edilebilecek maksimum handler sayısı (\code{DEOS\_MAX\_HANDLERS}) aşıldığında üretilir.
+    \item \textbf{0x00A1 -- Dispatch Duplicate Handler}: Aynı servis ve komut ID çifti için mükerrer bir handler kaydedilmeye çalışıldığında üretilir.
+    \item \textbf{0x00A2 -- Dispatch Handler Not Found}: Hedef olarak bu düğüme gelen bir mesaj için sistemde kayıtlı işleyici bulunamadığında üretilir.
 \end{itemize}
 
 Bu tablo global bir fault sistemi oluşturmaz.
@@ -321,6 +419,42 @@ fault.last_occurrence_ms = current_uptime_ms;
 
 Fault condition ortadan kalktığında ilgili kayıt implementasyona göre
 \texttt{INACTIVE} veya \texttt{LATCHED} durumuna geçirilebilir.
+
+\section{Çekirdek Kütüphane Fault API'si}
+
+\code{lib/deos\_core/include/deos/deos\_fault.h} başlık dosyası üzerinden sunulan C fonksiyonları, yerel düğümün veya çoklu mantıksal düğümlerin (örneğin Gateway) hata yönetimini gerçekleştirmek için standartlaştırılmıştır:
+
+\subsection{Düğüm Bazlı Fonksiyonlar}
+
+\begin{lstlisting}[language=C]
+int deos_fault_raise_for_node(deos_node_id_t local_node, uint16_t fault_id, 
+                              deos_fault_severity_t severity);
+int deos_fault_set_inactive_for_node(deos_node_id_t local_node, uint16_t fault_id);
+int deos_fault_latch_for_node(deos_node_id_t local_node, uint16_t fault_id);
+int deos_fault_clear_for_node(deos_node_id_t local_node, uint16_t fault_id);
+int deos_fault_clear_all_for_node(deos_node_id_t local_node);
+bool deos_fault_is_active_for_node(deos_node_id_t local_node, uint16_t fault_id);
+\end{lstlisting}
+
+\subsection{Varsayılan Düğüm Sarmalayıcıları (Primary Wrappers)}
+
+Tek düğümlü uygulamalarda doğrudan varsayılan yerel node ID üzerinden işlem yapan kolaylaştırıcı sarmalayıcılar mevcuttur:
+
+\begin{lstlisting}[language=C]
+int deos_fault_raise(uint16_t fault_id, deos_fault_severity_t severity);
+int deos_fault_set_inactive(uint16_t fault_id);
+int deos_fault_latch(uint16_t fault_id);
+int deos_fault_clear(uint16_t fault_id);
+int deos_fault_clear_all(void);
+bool deos_fault_is_active(uint16_t fault_id);
+\end{lstlisting}
+
+\subsection{Dizge Dönüştürme Yardımcıları}
+
+\begin{lstlisting}[language=C]
+const char *deos_fault_name(uint16_t fault_id);
+const char *deos_fault_severity_name(deos_fault_severity_t severity);
+\end{lstlisting}
 
 \section{GET\_FAULTS}
 
