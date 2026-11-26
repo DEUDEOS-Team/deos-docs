@@ -53,7 +53,7 @@
     \textbf{DEOS ROS 2 Topic Arayüz Tasarımı}
 }
 \author{\textbf{Emir Arkalı} (\href{mailto:emirarkali07@gmail.com}{emirarkali07@gmail.com})\\DEOS -- Dokuz Eylül Otonom Sistemler}
-\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 13 Ekim 2026}
+\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 18 Kasım 2026}
 
 % ================================================================
 \begin{document}
@@ -991,6 +991,28 @@ bağlanan bir node, yeni bir state değişikliği gerçekleşmesini beklemeden
 aracın son publish edilen state bilgisini alabilecektir.
 
 % ================================================================
+\section{STM32 Bağlantı Teşhisi}
+
+\begin{tabularx}{\textwidth}{@{}l l Y@{}}
+\toprule
+\textbf{Topic} & \textbf{Yön} & \textbf{Tetikleyici} \\
+\midrule
+\texttt{/deos/network/ping} & ROS 2 $\rightarrow$ Bridge & İstek üzerine \\
+\texttt{/deos/network/pong} & Bridge $\rightarrow$ ROS 2 & Eşleşen STM32 yanıtı \\
+\bottomrule
+\end{tabularx}
+
+Her iki topic de \texttt{std\_msgs/msg/UInt32} kullanır.
+\texttt{data} alanı 32 bit işaretsiz Ping ID değeridir.
+QoS profili \texttt{RELIABLE}, \texttt{KEEP\_LAST} (derinlik 10) ve
+\texttt{VOLATILE} olarak ayarlanır.
+
+Bridge her ROS 2 PING isteği için ana STM32'ye bir DEOS PING paketi gönderir.
+Beş saniye içinde aynı kimlikle gelen DEOS PONG yanıtını
+\texttt{/deos/network/pong} üzerinde yayınlar. Her yeni PING, bekleyen
+isteğin yerini alır. Eşleşme süresi dolduğunda PONG yayınlanmaz.
+
+% ================================================================
 \section{Topic Yönlerinin Özeti}
 % ================================================================
 
@@ -1015,6 +1037,8 @@ gereken topic'ler:
 /vehicle/lights/brake
 
 /vehicle/lights/headlight
+
+/deos/network/ping
 \end{verbatim}
 
 \subsection{Bridge Tarafından Publish Edilen Topic'ler}
@@ -1031,6 +1055,8 @@ Araçtan gelen durum ve sensör verilerinin yayınlanacağı topic'ler:
 /sensors/distance/<sensor_name>
 
 /vehicle/state_machine/state
+
+/deos/network/pong
 \end{verbatim}
 
 % ================================================================
@@ -1152,6 +1178,8 @@ distance sensors : 20 Hz
 state machine    : On Change
 
 signals/lights   : On Change
+
+ping/pong        : On Demand / On Response
 \end{verbatim}
 
 Sistem testleri sırasında ihtiyaç görülmesi halinde bu değerler
