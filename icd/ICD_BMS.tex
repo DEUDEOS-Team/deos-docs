@@ -31,9 +31,9 @@
 }
 
 \title{\textbf{DEOS BMS Service \& Gateway Protocol ICD}\\
-\large Sürüm 1.1 -- Batarya Yönetim Sistemi}
+\large Sürüm 1.2 -- Batarya Yönetim Sistemi}
 \author{\textbf{Emir Arkalı} (\href{mailto:emirarkali07@gmail.com}{emirarkali07@gmail.com})\\DEOS -- Dokuz Eylül Otonom Sistemler}
-\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 13 Ekim 2026}
+\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 26 Kasım 2026}
 
 \begin{document}
 
@@ -44,9 +44,9 @@
 \begin{tabularx}{\textwidth}{ll lX}
 \toprule
 \textbf{Doküman Tipi:} & Interface Control Document (ICD) & \textbf{Doküman Kodu:} & \code{DOC-ICD-NODE-BMS-012} \\
-\textbf{Doküman Sürümü:} & Sürüm 1.1 & \textbf{Protokol Sürümü:} & v1.1 (\hex{11}) -- Medya Bağımsız \\
+\textbf{Doküman Sürümü:} & Sürüm 1.2 & \textbf{Protokol Sürümü:} & v1.2 (\hex{12}) -- Medya Bağımsız \\
 \textbf{Yazar:} & Emir Arkalı (\texttt{emirarkali07@gmail.com}) & \textbf{Son Değiştiren:} & Emir Arkalı \\
-\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 13 Ekim 2026 \\
+\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 26 Kasım 2026 \\
 \textbf{Durum:} & Yürürlükte / Onaylandı & \textbf{Taşıma / Kapsam:} & BMS\_MAIN (\hex{20}), BMS\_AUX (\hex{21}), BMS\_GATEWAY (\hex{30}) \\
 \bottomrule
 \end{tabularx}
@@ -62,6 +62,7 @@
 v0.3 & 28 Eylül 2026 & Emir Arkalı & İlk taslak ve monolitik ICD v0.3 tanımı. \\
 v1.0 & 04 Ekim 2026 & Emir Arkalı & BMS servis protokolü tamamlayıcı dokümanı oluşturuldu. \\
 v1.1 & 13 Ekim 2026 & Emir Arkalı & Sürüm 1.1 standardizasyonu, kurumsal üstveri ve revizyon geçmişi eklendi. \\
+v1.2 & 26 Kasım 2026 & Emir Arkalı & Protokol v1.2 (\hex{12}) geçişi; BMS (\hex{0400}--\hex{04FF}) ve BMS Gateway (\hex{0500}--\hex{05FF}) hataları global \code{deos\_fault\_id\_t} registry'sine taşındı. \\
 \bottomrule
 \end{tabularx}
 \end{center}

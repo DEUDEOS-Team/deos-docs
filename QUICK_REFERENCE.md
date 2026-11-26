@@ -2,7 +2,7 @@
 
 Bu doküman; **Firmware (STM32)**, **Otonom Sürüş (ROS 2)**, **Yer Kontrol İstasyonu (Python)** ve **Sensör/BMS Entegrasyonu** geliştiren mühendislerin günlük çalışmada aynı dili konuşması, hızlıca değerleri teyit etmesi ve entegrasyon hatalarını önlemesi için hazırlanmış tek sayfalık pratik referans özetidir.
 
-* **Protokol Wire Sürümü:** `v1.1` (`0x11`)
+* **Protokol Wire Sürümü:** `v1.2` (`0x12`)
 * **Doküman Seti:** `DOC-ICD-CORE-001` - `DOC-ICD-NODE-BMS-012`
 * **Bayt Dizilimi (Endianness):** **TÜM VERİLER LITTLE-ENDIAN (LSB İLK).**
 
@@ -73,15 +73,15 @@ Bu doküman; **Firmware (STM32)**, **Otonom Sürüş (ROS 2)**, **Yer Kontrol İ
 
 ## 4. Standart DEOS Paket Anatomisi
 
-### 8 Baytlık Ortak Başlık (Common Header)
-Tüm medya katmanlarında (`CAN-FD`, `TCP`, `UDP`, `LoRa`) taşınan standart çekirdek başlıktır:
+### 9 Baytlık Evrensel Başlık (Universal Frame Header)
+Tüm medya katmanlarında (`UDP`, `TCP`, `LoRa`, `Serial`) taşınan standart çekirdek başlıktır (`deos_frame.h`):
 
 ```
- Byte 0      Byte 1      Byte 2      Byte 3      Byte 4      Byte 5      Byte 6      Byte 7
-┌───────────┬───────────┬───────────┬───────────┬───────────┬───────────┬───────────┬───────────┐
-│ Priority  │ Class     │ Service   │ Dest Node │ Src Node  │ Version   │ Sequence  │ Command   │
-│ (1 Byte)  │ (1 Byte)  │ (1 Byte)  │ (1 Byte)  │ (1 Byte)  │ (0x11)    │ (0-255)   │ (1 Byte)  │
-└───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┘
+ Byte 0      Byte 1      Byte 2      Byte 3      Byte 4      Byte 5      Byte 6      Byte 7      Byte 8
+┌───────────┬───────────┬───────────┬───────────┬───────────┬───────────┬───────────┬───────────┬───────────┐
+│ Dest Node │ Src Node  │ Priority  │ Version   │ Class     │ Service   │ Command   │ Sequence  │ Length N  │
+│ (1 Byte)  │ (1 Byte)  │ (1 Byte)  │ (0x12)    │ (1 Byte)  │ (1 Byte)  │ (1 Byte)  │ (0-255)   │ (0-60)    │
+└───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┘
 ```
 
 * **Öncelik Seviyeleri (Priority):**

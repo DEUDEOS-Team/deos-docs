@@ -32,9 +32,9 @@
 }
 
 \title{\textbf{DEOS Fault Management \& Diagnostics ICD}\\
-\large Sürüm 1.3 -- DIAGNOSTIC Servisi ve Hata Yönetimi}
+\large Sürüm 1.4 -- DIAGNOSTIC Servisi ve Global Hata Yönetimi}
 \author{\textbf{Emir Arkalı} (\href{mailto:emirarkali07@gmail.com}{emirarkali07@gmail.com})\\DEOS -- Dokuz Eylül Otonom Sistemler}
-\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 22 Ekim 2026}
+\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 26 Kasım 2026}
 
 \begin{document}
 
@@ -45,10 +45,10 @@
 \begin{tabularx}{\textwidth}{ll lX}
 \toprule
 \textbf{Doküman Tipi:} & Interface Control Document (ICD) & \textbf{Doküman Kodu:} & \code{DOC-ICD-DIAG-004} \\
-\textbf{Doküman Sürümü:} & Sürüm 1.3 & \textbf{Protokol Sürümü:} & v1.1 (\hex{11}) -- Medya Bağımsız \\
+\textbf{Doküman Sürümü:} & Sürüm 1.4 & \textbf{Protokol Sürümü:} & v1.2 (\hex{12}) -- Medya Bağımsız \\
 \textbf{Yazar:} & Emir Arkalı (\texttt{emirarkali07@gmail.com}) & \textbf{Son Değiştiren:} & Emir Arkalı \\
-\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 22 Ekim 2026 \\
-\textbf{Durum:} & Yürürlükte / Onaylandı & \textbf{Taşıma / Kapsam:} & DIAGNOSTIC Servisi (\hex{02}) \& Hata Kodları Registry \\
+\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 26 Kasım 2026 \\
+\textbf{Durum:} & Yürürlükte / Onaylandı & \textbf{Taşıma / Kapsam:} & DIAGNOSTIC Servisi (\hex{06}) \& Global Fault Registry \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -65,6 +65,7 @@ v1.0 & 04 Ekim 2026 & Emir Arkalı & Hata yönetimi bağımsız doküman oluştu
 v1.1 & 13 Ekim 2026 & Emir Arkalı & Sürüm 1.1 standardizasyonu, kurumsal üstveri ve revizyon geçmişi eklendi. \\
 v1.2 & 15 Ekim 2026 & Emir Arkalı & Abonelik ve Ağ Yönetimi (Subscription Engine) spesifik hata kodları (\hex{0010}--\hex{0014}) eklendi. \\
 v1.3 & 22 Ekim 2026 & Emir Arkalı & Çekirdek ve taşıyıcı katmanları (Router, Protokol, CAN-FD, LoRa, Ethernet, Dispatcher) hata kodları (\hex{0020}--\hex{00A2}) eklendi. \\
+v1.4 & 26 Kasım 2026 & Emir Arkalı & Protokol v1.2 (\hex{12}) geçişi. Node-specific fault namespace kaldırılıp tek global 16-bit alan bloklu \code{deos\_fault\_id\_t} registry'sine geçildi; tüm tel seviyesi fault sabitleri ve \code{deos\_fault\_name()} SSOT olarak \code{deos-protocol}'e taşındı. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -92,7 +93,7 @@ Bu doküman;
     \item \texttt{GET\_FAULTS} davranışını,
     \item fault response formatını,
     \item \texttt{CLEAR\_FAULTS} davranışını,
-    \item node bazlı başlangıç fault registry'lerini
+    \item global 16-bit domain bloklu fault registry'sini (\code{deos\_fault\_id\_t})
 \end{itemize}
 
 tanımlar.
@@ -175,40 +176,42 @@ typedef struct
 } deos_fault_record_t;
 \end{lstlisting}
 
-\section{Fault ID Namespace}
+\section{Global Fault ID Uzayı ve SSOT Mimarisi}
 
-DEOS sisteminde global bir fault registry kullanılmaz.
+DEOS v1.2 (\hex{12}) itibarıyla sistem genelinde \textbf{tek bir global 16-bit Fault ID registry'si} (\code{deos\_fault\_id\_t}) kullanılır. Node'a özgü çakışan yerel ID uzayları kaldırılmıştır.
 
-Bir fault'un kimliği aşağıdaki ikili ile belirlenir:
+\begin{itemize}
+    \item \textbf{Tek Doğruluk Kaynağı (SSOT):} Tüm tel seviyesi fault ID'leri (\code{deos\_fault\_id\_t}), önem dereceleri (\code{deos\_fault\_severity\_t}), durumlar (\code{deos\_fault\_state\_t}) ve dizge çözücüler (\code{deos\_fault\_name()}, \code{deos\_fault\_severity\_name()}) yalnızca \code{deos-protocol} kütüphanesinde (\code{include/deos/deos\_icd.h} ve \code{include/deos/deos\_frame.h}) tanımlanır.
+    \item \textbf{Sıfır Çakışma:} Her 16-bit Fault ID tüm araçta benzersiz tek bir anlama sahiptir. ROS 2 köprüsü, Python yer istasyonu ve tüm gömülü düğümler aynı kodu ek tablo olmadan doğrudan çözer.
+    \item \textbf{Çalışma Zamanı İzolasyonu:} Her mantıksal düğüm (örn. \code{DEOS\_NODE\_BMS\_MAIN} ve \code{DEOS\_NODE\_BMS\_AUX}) kendi yerel fault tablosunu (\code{deos-core}) bağımsız tutar; dolayısıyla aynı global kodu (örn. \hex{0400}) kendi düğüm kimliği altında bağımsız yükseltebilir.
+\end{itemize}
+
+\subsection{16-Bit Global Blok Haritası}
 
 \begin{center}
-\texttt{Source Node ID + Fault ID}
+\small
+\begin{tabular}{c l l}
+\toprule
+\textbf{ID Aralığı} & \textbf{Alt-Sistem / Alan} & \textbf{Kapsam} \\
+\midrule
+\hex{0000} & Sentinel & \code{DEOS\_FAULT\_ID\_END\_OF\_LIST} \\
+\hex{0001}--\hex{00FF} & Core \& Transport & System, Subscription, Router, Protocol, CAN, LoRa, Eth, Dispatcher \\
+\hex{0100}--\hex{01FF} & TRACTION & İnvertör, motor, hız/akım/sıcaklık hataları (rezerve) \\
+\hex{0200}--\hex{02FF} & STEERING & Enkoder, açı limiti, takip hatası (rezerve) \\
+\hex{0300}--\hex{03FF} & BRAKE & Fren aktüatörü, basınç/pozisyon, park freni (rezerve) \\
+\hex{0400}--\hex{04FF} & BMS & Batarya paketi, voltaj, akım, sıcaklık, hücre dengesizliği \\
+\hex{0500}--\hex{05FF} & BMS\_GATEWAY & Main/Aux BMS haberleşme kaybı, Classic CAN / CAN-FD köprü hataları \\
+\hex{0600}--\hex{06FF} & SENSORS & IMU ve harici sensör hataları (rezerve) \\
+\hex{0700}--\hex{07FF} & LIGHTING & Far/sinyal açık devre ve kısa devre hataları (rezerve) \\
+\hex{0800}--\hex{08FF} & CALIBRATION & Kalibrasyon sekansı hataları (rezerve) \\
+\hex{F000}--\hex{FFFE} & Debug / Deneysel & Geliştirme ve geçici saha testleri için rezerve \\
+\bottomrule
+\end{tabular}
 \end{center}
 
-Dolayısıyla;
+\subsection{Standart Global Fault ID Registry (\code{deos\_fault\_id\_t})}
 
-\begin{lstlisting}
-STEERING   / Fault 0x0101
-\end{lstlisting}
-
-ile
-
-\begin{lstlisting}
-TRACTION   / Fault 0x0101
-\end{lstlisting}
-
-aynı fault olmak zorunda değildir.
-
-Her node kendi fault namespace'ine sahiptir.
-
-Bununla birlikte yazılım bütünlüğünü artırmak amacıyla,
-birçok node'da ortak olarak ortaya çıkabilecek temel yazılım ve
-haberleşme fault'ları için düşük Fault ID değerlerinin aynı anlamda
-kullanılması önerilir.
-
-\subsection{Ortak Yerel Fault ID'leri}
-
-Aşağıdaki fault ID'leri DEOS çekirdek kütüphanesi (\code{lib/deos\_core}) ve node uygulamaları içerisinde ortak standart hata tanımları olarak kullanılmaktadır. Düğümler arası teşhis tutarlılığı için bu kodlar aynı anlamda ele alınmalıdır.
+Aşağıdaki fault ID'leri \code{deos-protocol/include/deos/deos\_icd.h} içerisinde tanımlı resmi global hata kodlarıdır:
 
 \begin{center}
 \small
@@ -296,6 +299,27 @@ Aşağıdaki fault ID'leri DEOS çekirdek kütüphanesi (\code{lib/deos\_core}) 
 \hex{00A0} & DEOS\_FAULT\_DISPATCH\_TABLE\_FULL & Handler tablosunda yer kalmadı \\
 \hex{00A1} & DEOS\_FAULT\_DISPATCH\_DUPLICATE\_HANDLER & Aynı komut için mükerrer handler kaydı \\
 \hex{00A2} & DEOS\_FAULT\_DISPATCH\_HANDLER\_NOT\_FOUND & Gelen komut için handler tanımlı değil \\
+\midrule
+\multicolumn{3}{c}{\textbf{BMS Hataları (0x0400 -- 0x04FF)}} \\
+\midrule
+\hex{0400} & DEOS\_FAULT\_BMS\_PACK\_OVERVOLTAGE & Batarya paketi aşırı voltaj \\
+\hex{0401} & DEOS\_FAULT\_BMS\_PACK\_UNDERVOLTAGE & Batarya paketi düşük voltaj \\
+\hex{0402} & DEOS\_FAULT\_BMS\_CHARGE\_OVERCURRENT & Şarj aşırı akım \\
+\hex{0403} & DEOS\_FAULT\_BMS\_DISCHARGE\_OVERCURRENT & Deşarj aşırı akım \\
+\hex{0404} & DEOS\_FAULT\_BMS\_OVERTEMPERATURE & Batarya aşırı sıcaklık \\
+\hex{0405} & DEOS\_FAULT\_BMS\_UNDERTEMPERATURE & Batarya düşük sıcaklık \\
+\hex{0406} & DEOS\_FAULT\_BMS\_CELL\_IMBALANCE & Hücre voltaj dengesizliği \\
+\hex{0407} & DEOS\_FAULT\_BMS\_INTERNAL\_ERROR & BMS dahili hatası \\
+\hex{0408} & DEOS\_FAULT\_BMS\_INVALID\_MEASUREMENT & Geçersiz BMS ölçümü \\
+\midrule
+\multicolumn{3}{c}{\textbf{BMS Gateway Hataları (0x0500 -- 0x05FF)}} \\
+\midrule
+\hex{0500} & DEOS\_FAULT\_GW\_MAIN\_COMM\_LOST & Ana BMS (BMS\_MAIN) iletişimi kesildi \\
+\hex{0501} & DEOS\_FAULT\_GW\_AUX\_COMM\_LOST & Yardımcı BMS (BMS\_AUX) iletişimi kesildi \\
+\hex{0502} & DEOS\_FAULT\_GW\_CAN\_BUS\_OFF & Classic CAN hattı Bus-Off \\
+\hex{0503} & DEOS\_FAULT\_GW\_FD\_BUS\_OFF & CAN-FD hattı Bus-Off \\
+\hex{0504} & DEOS\_FAULT\_GW\_INVALID\_FRAME & Geçersiz BMS çerçevesi \\
+\hex{0505} & DEOS\_FAULT\_GW\_PROTOCOL\_ERROR & BMS protokol / CRC hatası \\
 \bottomrule
 \end{longtable}
 \end{center}
@@ -347,15 +371,7 @@ Mesajların servis ve komut ID'sine göre yerel işleyici fonksiyonlara ulaştı
     \item \textbf{0x00A2 -- Dispatch Handler Not Found}: Hedef olarak bu düğüme gelen bir mesaj için sistemde kayıtlı işleyici bulunamadığında üretilir.
 \end{itemize}
 
-Bu tablo global bir fault sistemi oluşturmaz.
-
-Örneğin \texttt{0x0004} kodu Steering node'unda oluştuğunda
-Steering node'un kendi communication timeout kaydını,
-BMS Gateway üzerinde oluştuğunda ise BMS Gateway'in kendi
-communication timeout kaydını ifade eder.
-
-Node'a özgü fault'ların \texttt{0x0100} ve üzerindeki değerlerden
-başlatılması önerilir.
+Tüm yeni kalıcı hata kodları ilgili alt-sistem bloğuna (\code{deos-protocol/include/deos/deos\_icd.h}) eklenmeli ve \code{deos\_fault\_name()} fonksiyonunda karşılığı tanımlanmalıdır.
 
 \section{Severity}
 
@@ -449,7 +465,7 @@ int deos_fault_clear_all(void);
 bool deos_fault_is_active(uint16_t fault_id);
 \end{lstlisting}
 
-\subsection{Dizge Dönüştürme Yardımcıları}
+\subsection{Dizge Dönüştürme Yardımcıları (\code{deos-protocol/include/deos/deos\_frame.h})}
 
 \begin{lstlisting}[language=C]
 const char *deos_fault_name(uint16_t fault_id);
@@ -649,219 +665,51 @@ Bu nedenle CLEAR\_FAULTS:
 \textbf{fault condition'ı değil, saklanan fault kayıtlarını temizler.}
 \end{center}
 
-\section{Node Bazlı Fault Registry}
+\section{Alt-Sistem Bazlı Kullanım Kuralları}
 
-Aşağıdaki tablolar başlangıç fault registry önerilerini tanımlar.
+Tüm hata kodları yukarıdaki global \code{deos\_fault\_id\_t} tablosundan seçilir; düğümler kendi başlıklarında yerel \hex{0100}+ fault enum'u tanımlamaz.
 
-Her node yalnızca kendi donanımı ve yazılımı için anlamlı fault'ları
-uygulamak zorundadır.
+\subsection{BMS Main (\hex{20}), BMS Aux (\hex{21}) ve BMS Gateway (\hex{30})}
 
-\subsection{Main STM32}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & CAN-FD Bus Off \\
-0x0101 & Ethernet Link / Communication Failure \\
-0x0102 & LoRa Communication Failure \\
-0x0103 & Router Queue Overflow \\
-0x0104 & Invalid / Unknown Route \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Traction Node}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & Motor / Inverter Communication Lost \\
-0x0101 & Motor Overcurrent \\
-0x0102 & Motor Overtemperature \\
-0x0103 & Speed Feedback Invalid \\
-0x0104 & Overspeed Detected \\
-0x0105 & Actuator / Motor Response Timeout \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Steering Node}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & Steering Encoder Communication Lost \\
-0x0101 & Steering Position Invalid \\
-0x0102 & Steering Angle Out of Range \\
-0x0103 & Steering Motor Overcurrent \\
-0x0104 & Steering Motor / Actuator Stall \\
-0x0105 & Steering Response Timeout \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Brake Node}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & Brake Position Feedback Invalid \\
-0x0101 & Brake Actuator Overcurrent \\
-0x0102 & Brake Actuator Stall \\
-0x0103 & Brake Position Out of Range \\
-0x0104 & Brake Response Timeout \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{BMS Main ve BMS Aux}
-
-\texttt{BMS\_MAIN} ve \texttt{BMS\_AUX} ayrı DEOS Node ID'lerine sahip olduğundan,
-aynı Fault ID registry'sini birbirlerinden bağımsız olarak
-kullanabilirler.
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & Pack Overvoltage \\
-0x0101 & Pack Undervoltage \\
-0x0102 & Charge Overcurrent \\
-0x0103 & Discharge Overcurrent \\
-0x0104 & Overtemperature \\
-0x0105 & Undertemperature \\
-0x0106 & Cell Voltage Imbalance \\
-0x0107 & BMS Internal Fault \\
-0x0108 & Invalid BMS Measurement \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-BMS fault'ları gateway tarafından DALY BMS bilgilerinden üretilse
-bile DEOS mesajındaki Source Node ilgili BMS node'u olmalıdır.
-
-Örneğin \texttt{BMS\_MAIN} fault'u:
-
-\begin{lstlisting}
-Source  = DEOS_NODE_BMS_MAIN
-Service = DEOS_SERVICE_DIAGNOSTIC
-\end{lstlisting}
-
-olarak gönderilir.
-
-\subsection{BMS Gateway}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & BMS Main Communication Lost \\
-0x0101 & BMS Aux Communication Lost \\
-0x0102 & Classic CAN Bus Off \\
-0x0103 & CAN-FD Bus Off \\
-0x0104 & Invalid BMS Frame \\
-0x0105 & BMS Protocol / CRC Error \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Gateway'in kendi fault'larında Source Node:
-
-\begin{lstlisting}
-DEOS_NODE_BMS_GATEWAY
-\end{lstlisting}
-
-olmalıdır.
-
-Gateway'in \texttt{BMS\_MAIN} veya \texttt{BMS\_AUX} adına oluşturduğu fault'larda ise
-Source Node ilgili mantıksal BMS Node ID'si olarak korunmalıdır.
-
-\subsection{Textual Node}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & DEOS Transport Connection Lost \\
-0x0101 & Invalid Message Serialization / Parsing \\
-0x0102 & Configuration Operation Failed \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{ROS 2 Bridge Düğümü (DEOS\_NODE\_ROS\_BRIDGE)}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & ROS 2 UDP Bridge Connection Lost \\
-0x0101 & ROS 2 Bridge Node Unreachable \\
-0x0102 & DEOS--ROS 2 Message Conversion Failed \\
-0x0103 & Required Topic / Bridge Endpoint Unavailable \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Ground Control Node}
-
-\begin{center}
-\begin{tabular}{c l}
-\toprule
-\textbf{ID} & \textbf{Fault} \\
-\midrule
-0x0100 & LoRa Communication Lost \\
-0x0101 & Invalid LoRa / DEOS Message \\
-0x0102 & Transport Timeout \\
-\bottomrule
-\end{tabular}
-\end{center}
+\begin{itemize}
+    \item \code{DEOS\_NODE\_BMS\_MAIN} ve \code{DEOS\_NODE\_BMS\_AUX}, ayrı mantıksal düğüm kimliklerine sahip olduklarından global \hex{0400}--\hex{04FF} (\code{DEOS\_FAULT\_BMS\_*}) kodlarını birbirinden bağımsız olarak kendi kayıt tablolarında tutar.
+    \item BMS fault'ları gateway tarafından DALY BMS bilgilerinden üretilse bile DEOS mesajındaki \code{Source Node} ilgili BMS düğümü (\code{DEOS\_NODE\_BMS\_MAIN} veya \code{DEOS\_NODE\_BMS\_AUX}) olmalıdır.
+    \item Gateway'in kendi haberleşme/köprü hataları (\hex{0500}--\hex{05FF}, \code{DEOS\_FAULT\_GW\_*}) ise \code{Source Node = DEOS\_NODE\_BMS\_GATEWAY} ile yayınlanır.
+\end{itemize}
 
 \section{Örnek GET\_FAULTS İşlemi}
 
-Main STM32, Steering node üzerinde kayıtlı fault'ları istemektedir.
+Main STM32, BMS Main node üzerinde kayıtlı fault'ları istemektedir.
 
 Request:
 
 \begin{lstlisting}
 Source        = DEOS_NODE_MAIN_STM32
-Destination   = DEOS_NODE_STEERING
+Destination   = DEOS_NODE_BMS_MAIN
 Message Class = DEOS_CLASS_REQUEST
 Service       = DEOS_SERVICE_DIAGNOSTIC
 Command       = DEOS_CMD_DIAG_GET_FAULTS
 \end{lstlisting}
 
-Steering node üzerinde aşağıdaki fault'ların bulunduğu varsayılsın:
+BMS Main node üzerinde aşağıdaki global fault'ların bulunduğu varsayılsın:
 
 \begin{lstlisting}
-0x0100  Steering Encoder Communication Lost
-0x0103  Steering Motor Overcurrent
+0x0400  DEOS_FAULT_BMS_PACK_OVERVOLTAGE
+0x0404  DEOS_FAULT_BMS_OVERTEMPERATURE
 \end{lstlisting}
 
 Mesaj akışı:
 
 \begin{lstlisting}
-MAIN_STM32                         STEERING
+MAIN_STM32                         BMS_MAIN
     |                                  |
     |------ GET_FAULTS --------------->|
     |                                  |
-    |<----- Fault 0x0100 --------------|
+    |<----- Fault 0x0400 --------------|
     |                                  |
     |          100 ms                  |
     |                                  |
-    |<----- Fault 0x0103 --------------|
+    |<----- Fault 0x0404 --------------|
     |                                  |
     |          100 ms                  |
     |                                  |
@@ -869,19 +717,19 @@ MAIN_STM32                         STEERING
 \end{lstlisting}
 
 Her fault response mesajının Source alanı
-\texttt{DEOS\_NODE\_STEERING} olarak kalır.
+\texttt{DEOS\_NODE\_BMS\_MAIN} olarak kalır.
 
 \section{Örnek CLEAR\_FAULTS İşlemi}
 
 \begin{lstlisting}
 Source        = DEOS_NODE_MAIN_STM32
-Destination   = DEOS_NODE_STEERING
+Destination   = DEOS_NODE_BMS_MAIN
 Message Class = DEOS_CLASS_COMMAND
 Service       = DEOS_SERVICE_DIAGNOSTIC
 Command       = DEOS_CMD_DIAG_CLEAR_FAULTS
 \end{lstlisting}
 
-Steering node bu mesajı aldıktan sonra saklanan fault kayıtlarını
+BMS Main node bu mesajı aldıktan sonra saklanan fault kayıtlarını
 temizler.
 
 Devam eden fiziksel veya yazılımsal bir hata mevcutsa ilgili
@@ -892,32 +740,19 @@ fault daha sonra yeniden oluşturulabilir.
 Fault mekanizmasının temel kuralları aşağıdaki gibidir:
 
 \begin{enumerate}
-    \item Her node kendi fault kayıt alanına sahiptir.
-    
-    \item Global bir fault registry yoktur.
-    
-    \item Fault kimliği Source Node ID ve Fault ID'nin birlikte
-    değerlendirilmesi ile belirlenir.
-    
-    \item Düşük Fault ID değerleri ortak yazılım ve haberleşme
-    hataları için aynı anlamda kullanılabilir.
-    
-    \item Node'a özgü fault'ların 0x0100 ve üzerindeki ID'lerden
-    başlaması önerilir.
-    
-    \item GET\_FAULTS tek bir request ile node üzerindeki bütün
-    fault kayıtlarının gönderilmesini başlatır.
-    
-    \item Her CAN-FD response frame'i yalnızca bir fault taşır.
-    
-    \item Ardışık fault frame'leri 100 ms aralıklarla gönderilir.
-    
-    \item Fault listesinin bittiği Fault ID = 0x0000 ile bildirilir.
-    
-    \item CLEAR\_FAULTS node'un saklanan fault kayıtlarını temizler.
-    
-    \item Devam eden bir hata condition'ı CLEAR\_FAULTS sonrasında
-    tekrar fault oluşturabilir.
+    \item Her mantıksal node çalışma zamanında kendi yerel fault kayıt tablosuna sahiptir (\code{deos-core}).
+
+    \item Tüm sistemde tek bir global 16-bit fault registry (\code{deos\_fault\_id\_t}) kullanılır; tek doğruluk kaynağı \code{deos-protocol/include/deos/deos\_icd.h} dosyasıdır.
+
+    \item Her alt-sistem kendi 256'lık ID bloğunu kullanır (Core/Transport \hex{0001}--\hex{00FF}, Traction \hex{0100}+, Steering \hex{0200}+, Brake \hex{0300}+, BMS \hex{0400}+, BMS Gateway \hex{0500}+, Sensors \hex{0600}+, Lighting \hex{0700}+, Calibration \hex{0800}+, Debug \hex{F000}--\hex{FFFE}).
+
+    \item GET\_FAULTS tek bir request ile node üzerindeki bütün fault kayıtlarının gönderilmesini başlatır.
+
+    \item Her response frame'i yalnızca bir fault taşır ve ardışık fault frame'leri nominal 100 ms aralıklarla gönderilir.
+
+    \item Fault listesinin bittiği \code{Fault ID = 0x0000} (\code{DEOS\_FAULT\_ID\_END\_OF\_LIST}) ile bildirilir.
+
+    \item CLEAR\_FAULTS node'un saklanan fault kayıtlarını temizler; devam eden bir hata condition'ı sonrasında tekrar fault oluşturabilir.
 \end{enumerate}
 
 \end{document}

@@ -36,9 +36,9 @@
 }
 
 \title{\textbf{DEOS Ethernet Transport Adapter (TCP \& UDP) ICD}\\
-\large Sürüm 1.1 -- Textual (TCP) \& ROS 2 Bridge (UDP) Arayüzleri}
+\large Sürüm 1.2 -- Textual (TCP) \& ROS 2 Bridge (UDP) Arayüzleri}
 \author{\textbf{Emir Arkalı} (\href{mailto:emirarkali07@gmail.com}{emirarkali07@gmail.com})\\DEOS -- Dokuz Eylül Otonom Sistemler}
-\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 13 Ekim 2026}
+\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 26 Kasım 2026}
 
 \begin{document}
 
@@ -49,9 +49,9 @@
 \begin{tabularx}{\textwidth}{ll lX}
 \toprule
 \textbf{Doküman Tipi:} & Interface Control Document (ICD) & \textbf{Doküman Kodu:} & \code{DOC-ICD-TRP-ETH-006} \\
-\textbf{Doküman Sürümü:} & Sürüm 1.1 & \textbf{Protokol Sürümü:} & v1.1 (\hex{11}) -- Medya Bağımsız \\
+\textbf{Doküman Sürümü:} & Sürüm 1.2 & \textbf{Protokol Sürümü:} & v1.2 (\hex{12}) -- Medya Bağımsız \\
 \textbf{Yazar:} & Emir Arkalı (\texttt{emirarkali07@gmail.com}) & \textbf{Son Değiştiren:} & Emir Arkalı \\
-\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 13 Ekim 2026 \\
+\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 26 Kasım 2026 \\
 \textbf{Durum:} & Yürürlükte / Onaylandı & \textbf{Taşıma / Kapsam:} & TCP (Port 5000) \& UDP (Port 5001) Taşıma Katmanı \\
 \bottomrule
 \end{tabularx}
@@ -67,6 +67,7 @@
 v0.3 & 28 Eylül 2026 & Emir Arkalı & İlk taslak ve monolitik ICD v0.3 tanımı. \\
 v1.0 & 04 Ekim 2026 & Emir Arkalı & TCP/Ethernet adaptörü bağımsız doküman oluşturuldu. \\
 v1.1 & 13 Ekim 2026 & Emir Arkalı & Sürüm 1.1 standardizasyonu. Yerel ROS 2 UDP Bridge (Port 5001) taşıma katmanı entegre edildi; Textual ve ROS Bridge Node ID eşleşmeleri düzeltildi. \\
+v1.2 & 26 Kasım 2026 & Emir Arkalı & Protokol v1.2 (\hex{12}) geçişi ve sıkı çerçeve uzunluk/sürüm doğrulaması. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -168,7 +169,7 @@ $8 + N$ & 8 Bayt Sabit Başlık & Dinamik Veri Baytları \\
 \textbf{3}  & service & \hex{00} & \code{DEOS\_SERVICE\_SYSTEM} \\
 \textbf{4}  & destination & \hex{03} & \code{DEOS\_NODE\_MAIN\_STM32} \\
 \textbf{5}  & source & \hex{04} & \code{DEOS\_NODE\_ROS\_BRIDGE} (\hex{01} Textual için) \\
-\textbf{6}  & version & \hex{11} & Protokol Versiyonu (v1.1) \\
+\textbf{6}  & version & \hex{12} & Protokol Versiyonu (v1.2) \\
 \textbf{7}  & sequence & \hex{05} & Mesaj Sıra Numarası \\
 \textbf{8}  & command & \hex{01} & \code{DEOS\_CMD\_SYSTEM\_PING} \\
 \textbf{9}  & payload[0] & \hex{45} & PING ID: 69 (Little Endian) LSB \\
@@ -188,8 +189,8 @@ import socket, struct
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(("192.168.1.10", 5000))
 
-# 8 bayt DEOS Header: Prio, Class, Srv, Dest(0x03), Src(0x01), Ver(0x11), Seq, Cmd(0x01)
-header = struct.pack('<8B', 1, 1, 0, 0x03, 0x01, 0x11, 1, 0x01)
+# 8 bayt DEOS Header: Prio, Class, Srv, Dest(0x03), Src(0x01), Ver(0x12), Seq, Cmd(0x01)
+header = struct.pack('<8B', 1, 1, 0, 0x03, 0x01, 0x12, 1, 0x01)
 payload = struct.pack('<I', 69) # Ping ID: 69
 msg = header + payload
 
@@ -211,7 +212,7 @@ tx_buf[2] = DEOS_CLASS_COMMAND;
 tx_buf[3] = DEOS_SERVICE_TRACTION;
 tx_buf[4] = DEOS_NODE_TRACTION;     // Hedef: 0x10
 tx_buf[5] = DEOS_NODE_ROS_BRIDGE;   // Kaynak: 0x04
-tx_buf[6] = 0x11;                   // DEOS v1.1
+tx_buf[6] = 0x12;                   // DEOS v1.2
 tx_buf[7] = seq++;
 tx_buf[8] = 0x01;                   // SET_SPEED
 

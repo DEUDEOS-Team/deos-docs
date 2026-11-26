@@ -42,9 +42,9 @@
 \newcommand{\code}[1]{\texttt{#1}}
 
 \title{\textbf{DEOS CAN-FD Transport Adapter ICD}\\
-\large Sürüm 1.1 -- Fiziksel CAN-FD Taşıma Katmanı}
+\large Sürüm 1.2 -- Fiziksel CAN-FD Taşıma Katmanı}
 \author{\textbf{Emir Arkalı} (\href{mailto:emirarkali07@gmail.com}{emirarkali07@gmail.com})\\DEOS -- Dokuz Eylül Otonom Sistemler}
-\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 13 Ekim 2026}
+\date{İlk Yayın: 28 Eylül 2026 \quad | \quad Son Revizyon: 26 Kasım 2026}
 
 \begin{document}
 \maketitle
@@ -54,9 +54,9 @@
 \begin{tabularx}{\textwidth}{ll lX}
 \toprule
 \textbf{Doküman Tipi:} & Interface Control Document (ICD) & \textbf{Doküman Kodu:} & \code{DOC-ICD-TRP-CANFD-005} \\
-\textbf{Doküman Sürümü:} & Sürüm 1.1 & \textbf{Protokol Sürümü:} & v1.1 (\hex{11}) -- Medya Bağımsız \\
+\textbf{Doküman Sürümü:} & Sürüm 1.2 & \textbf{Protokol Sürümü:} & v1.2 (\hex{12}) -- Medya Bağımsız \\
 \textbf{Yazar:} & Emir Arkalı (\texttt{emirarkali07@gmail.com}) & \textbf{Son Değiştiren:} & Emir Arkalı \\
-\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 13 Ekim 2026 \\
+\textbf{İlk Yayın Tarihi:} & 28 Eylül 2026 & \textbf{Son Revizyon Tarihi:} & 26 Kasım 2026 \\
 \textbf{Durum:} & Yürürlükte / Onaylandı & \textbf{Taşıma / Kapsam:} & CAN-FD Taşıma Adaptörü (29-bit ID, DLC, BRS) \\
 \bottomrule
 \end{tabularx}
@@ -72,6 +72,7 @@
 v0.3 & 28 Eylül 2026 & Emir Arkalı & İlk taslak ve monolitik ICD v0.3 tanımı. \\
 v1.0 & 04 Ekim 2026 & Emir Arkalı & Modüler CAN-FD taşıma adaptörü ayrımı. \\
 v1.1 & 13 Ekim 2026 & Emir Arkalı & Sürüm 1.1 standardizasyonu, Evrensel Çerçeve dönüşüm mekanizması entegrasyonu ve kurumsal üstveri eklemesi. \\
+v1.2 & 26 Kasım 2026 & Emir Arkalı & Protokol v1.2 (\hex{12}) geçişi ve ortak başlık sürüm güncellemesi. \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -148,7 +149,7 @@ CAN-FD çerçevesinin veri alanında (Payload alanı) sabit 4 baytlık ortak ba�
 \toprule
 \textbf{Byte Ofset} & \textbf{Alan Adı} & \textbf{Boyut} & \textbf{Açıklama} \\
 \midrule
-0 & \code{Version} & 1 Byte & Protokol sürümü (\hex{11} = v1.1) \\
+0 & \code{Version} & 1 Byte & Protokol sürümü (\hex{12} = v1.2) \\
 1 & \code{Sequence} & 1 Byte & Düğüm bazlı artan mesaj takip sayacı \\
 2 & \code{Command} & 1 Byte & İlgili servise ait komut kodu \\
 3 & \code{Length} & 1 Byte & Arkadan gelen geçerli payload boyutu ($N$, 0--60 bayt) \\

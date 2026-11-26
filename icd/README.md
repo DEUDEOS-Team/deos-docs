@@ -12,11 +12,11 @@ Protokolün monolitik ilk sürümü arşivlenmiş (`docs/DEOS_CANFD_ICD_v0_3.tex
 
 | Alan | Bilgi |
 |---|---|
-| **Protokol Wire Sürümü** | **v1.1** (`0x11`) |
-| **Doküman Ailesi Sürümü** | **Sürüm 1.1** |
+| **Protokol Wire Sürümü** | **v1.2** (`0x12`) |
+| **Doküman Ailesi Sürümü** | **Sürüm 1.2** |
 | **Doküman Sahibi & Yazar** | Emir Arkalı (`emirarkali07@gmail.com`) |
 | **İlk Yayın Tarihi** | 28 Eylül 2026 |
-| **Son Güncelleme** | 13 Ekim 2026 |
+| **Son Güncelleme** | 26 Kasım 2026 |
 | **Durum** | Onaylandı / Aktif Normatif Şartname |
 
 ---
